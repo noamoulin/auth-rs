@@ -1,0 +1,14 @@
+[package]
+name = "auth-rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.95"
+ed25519-dalek = { version = "2.1.1", features = ["signature"]}
+prost = "0.13.4"
+prost-build = "0.13.4"
+
+[build-dependencies]
+prost = "0.13.4"
+prost-build = "0.13.4"
