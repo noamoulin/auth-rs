@@ -2,6 +2,7 @@
 
 use ed25519_dalek::{Signature, SigningKey, VerifyingKey, ed25519::signature::SignerMut};
 use prost::Message;
+use ed25519_dalek::Verifier;
 use std::marker::PhantomData;
 
 pub mod proto {
@@ -114,5 +115,44 @@ impl TryFrom<&[u8]> for AuthorityCertificate<CertifiedSet, CertifierSet, Certifi
     type Error = anyhow::Error;
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         AuthorityCertificate::try_deserialize_protobuf(bytes)
+    }
+}
+
+impl AuthorityCertificate<CertifiedSet, CertifierSet, CertifierSignatureSet> {
+    pub fn sign_certified(self, certified_signing_key: SigningKey) -> Self {
+        let signature = certified_signing_key.clone().sign(&self.certifier_signature.unwrap().to_vec());
+        AuthorityCertificate {
+            certified_signature: Some(signature),
+            is_signed_by_certified: true,
+            ..self
+        }
+    }
+}
+
+pub enum AuthorityCertificateError {
+    NotSignedByCertified,
+    InvalidCertifiedSignature,
+    InvalidCertifierSignature,
+}
+
+impl AuthorityCertificate<CertifiedSet, CertifierSet, CertifierSignatureSet> {
+    pub fn verify(&self, certified_pubkey: VerifyingKey) -> Result<(), Vec<AuthorityCertificateError>> {
+        let mut errors = Vec::new();
+
+        if let Err(_) = self.certifier_pubkey.unwrap().verify(self.certified_pubkey.unwrap().as_bytes(), &self.certifier_signature.unwrap()) {
+            errors.push(AuthorityCertificateError::InvalidCertifierSignature);
+        }
+        if self.is_signed_by_certified {
+            if let Err(_) = certified_pubkey.verify(self.certifier_signature.unwrap().to_vec().as_slice(), &self.certified_signature.unwrap()) {
+                errors.push(AuthorityCertificateError::InvalidCertifiedSignature);
+            }
+        } else {
+            errors.push(AuthorityCertificateError::NotSignedByCertified);
+        }
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
     }
 }
