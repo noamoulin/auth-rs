@@ -133,10 +133,12 @@ pub enum AuthorityCertificateError {
     NotSignedByCertified,
     InvalidCertifiedSignature,
     InvalidCertifierSignature,
+    InvalidCertifierPubkey,
+    InvalidCertifiedPubkey,
 }
 
 impl AuthorityCertificate<CertifiedSet, CertifierSet, CertifierSignatureSet> {
-    pub fn verify(&self, certified_pubkey: VerifyingKey) -> Result<(), Vec<AuthorityCertificateError>> {
+    pub fn verify(&self, certified_pubkey: VerifyingKey, certifier_pubkey: VerifyingKey) -> Result<(), Vec<AuthorityCertificateError>> {
         let mut errors = Vec::new();
 
         if let Err(_) = self.certifier_pubkey.unwrap().verify(self.certified_pubkey.unwrap().as_bytes(), &self.certifier_signature.unwrap()) {
@@ -148,6 +150,12 @@ impl AuthorityCertificate<CertifiedSet, CertifierSet, CertifierSignatureSet> {
             }
         } else {
             errors.push(AuthorityCertificateError::NotSignedByCertified);
+        }
+        if self.certifier_pubkey.unwrap() != certifier_pubkey {
+            errors.push(AuthorityCertificateError::InvalidCertifierPubkey);
+        }
+        if self.certified_pubkey.unwrap() != certified_pubkey {
+            errors.push(AuthorityCertificateError::InvalidCertifiedPubkey);
         }
         if errors.is_empty() {
             Ok(())
