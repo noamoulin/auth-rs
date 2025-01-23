@@ -151,16 +151,29 @@ impl AuthorityCertificate {
     }
 }
 
+#[derive(thiserror::Error, Debug)]
 pub enum AuthorityCertificateBuilderError {
+    #[error("The certificate is not signed by the certified authority")]
     NotSignedByCertified,
+    #[error("The certified signature is invalid")]
     InvalidCertifiedSignature,
+    #[error("The certifier signature is invalid")]
     InvalidCertifierSignature,
+    #[error("The certifier pubkey is invalid")]
     InvalidCertifierPubkey,
+    #[error("The certified pubkey is invalid")]
     InvalidCertifiedPubkey,
 }
 
+#[derive(thiserror::Error, Debug)]
+#[error("Multiple verification errors: {0:?}")]
+pub struct AuthorityCertificateVerificationErrors(pub Vec<AuthorityCertificateBuilderError>);
+
 impl AuthorityCertificate {
-    pub fn verify(&self, certified_pubkey: VerifyingKey, certifier_pubkey: VerifyingKey) -> Result<(), Vec<AuthorityCertificateBuilderError>> {
+    pub fn verify(&self, certified_pubkey: String, certifier_pubkey: String) -> anyhow::Result<()> {
+        let certified_pubkey = VerifyingKey::try_from(hex::decode(certified_pubkey)?.as_slice())?;
+        let certifier_pubkey = VerifyingKey::try_from(hex::decode(certifier_pubkey)?.as_slice())?;
+
         let mut errors = Vec::new();
 
         if let Err(_) = self.certifier_pubkey.verify(self.certified_pubkey.as_bytes(), &self.certifier_signature) {
@@ -179,10 +192,11 @@ impl AuthorityCertificate {
         if self.certified_pubkey != certified_pubkey {
             errors.push(AuthorityCertificateBuilderError::InvalidCertifiedPubkey);
         }
+
         if errors.is_empty() {
             Ok(())
         } else {
-            Err(errors)
+            Err(anyhow::Error::new(AuthorityCertificateVerificationErrors(errors)))
         }
     }
 }
