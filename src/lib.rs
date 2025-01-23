@@ -1,5 +1,3 @@
-#![feature(type_changing_struct_update)]
-
 use ed25519_dalek::{Signature, SigningKey, VerifyingKey, ed25519::signature::SignerMut};
 use prost::Message;
 use ed25519_dalek::Verifier;
@@ -53,7 +51,9 @@ impl AuthorityCertificate<NotSet, NotSet, NotSet> {
             _certified_set: PhantomData,
             _certifier_signature_set: PhantomData,
             is_signed_by_certified: false,
-            ..self
+            certifier_pubkey: self.certifier_pubkey,
+            certifier_signature: self.certifier_signature,
+            certified_signature: self.certified_signature,
         }
     }
 }
@@ -74,7 +74,9 @@ impl AuthorityCertificate<CertifiedSet, NotSet, NotSet> {
             _certifier_set: PhantomData,
             _certified_set: PhantomData,
             _certifier_signature_set: PhantomData,
-            ..self
+            is_signed_by_certified: false,
+            certified_pubkey: self.certified_pubkey,
+            certified_signature: self.certified_signature,
         }
     }
 }
