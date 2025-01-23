@@ -14,9 +14,9 @@ pub struct AuthorityCertificate<CertifierSet, CertifiedSet, CertifierSignatureSe
     certified_pubkey: Option<VerifyingKey>,
     certifier_signature: Option<Signature>,
     certified_signature: Option<Signature>,
-    _certifier_set: PhantomData<CertifierSet>,
-    _certified_set: PhantomData<CertifiedSet>,
-    _certifier_signature_set: PhantomData<CertifierSignatureSet>,
+    pub _certifier_set: PhantomData<CertifierSet>,
+    pub _certified_set: PhantomData<CertifiedSet>,
+    pub _certifier_signature_set: PhantomData<CertifierSignatureSet>,
     is_signed_by_certified: bool,
 }
 
