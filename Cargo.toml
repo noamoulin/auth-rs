@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.95"
+anyhow = "^1.0.71"
 ed25519-dalek = { version = "2.1.1", features = ["signature"]}
 prost = "0.13.4"
 prost-build = "0.13.4"
