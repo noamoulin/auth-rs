@@ -1,4 +1,4 @@
-use ed25519_dalek::{Signature, SigningKey, VerifyingKey, ed25519::signature::SignerMut};
+use ed25519_dalek::{ed25519::signature::SignerMut, SecretKey, Signature, SigningKey, VerifyingKey};
 use prost::Message;
 use ed25519_dalek::Verifier;
 use std::marker::PhantomData;
@@ -138,13 +138,16 @@ impl TryFrom<&[u8]> for AuthorityCertificate {
 }
 
 impl AuthorityCertificate {
-    pub fn sign_certified(self, certified_signing_key: SigningKey) -> Self {
+    /// sign with a given hex-encoded ed25519 signing key
+    pub fn sign_certified(self, certified_keypair: String) -> anyhow::Result<Self> {
+        let keypair = hex::decode(certified_keypair)?;
+        let certified_signing_key = SigningKey::try_from(keypair.as_slice())?;
         let signature = certified_signing_key.clone().sign(&self.certifier_signature.to_vec());
-        AuthorityCertificate {
+        Ok(AuthorityCertificate {
             certified_signature: Some(signature),
             is_signed_by_certified: true,
             ..self
-        }
+        })
     }
 }
 
