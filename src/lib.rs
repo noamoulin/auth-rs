@@ -10,14 +10,14 @@ pub mod proto {
 /// A a certificate that whitelist a public key, to be valid it must contains the whitelisted public key signed by the certifier authority
 /// and the resulting signature signed by the certified authority
 pub struct AuthorityCertificate<CertifierSet, CertifiedSet, CertifierSignatureSet> {
-    certifier_pubkey: Option<VerifyingKey>,
-    certified_pubkey: Option<VerifyingKey>,
-    certifier_signature: Option<Signature>,
-    certified_signature: Option<Signature>,
+    pub certifier_pubkey: Option<VerifyingKey>,
+    pub certified_pubkey: Option<VerifyingKey>,
+    pub certifier_signature: Option<Signature>,
+    pub certified_signature: Option<Signature>,
     pub _certifier_set: PhantomData<CertifierSet>,
     pub _certified_set: PhantomData<CertifiedSet>,
     pub _certifier_signature_set: PhantomData<CertifierSignatureSet>,
-    is_signed_by_certified: bool,
+    pub is_signed_by_certified: bool,
 }
 
 struct CertifierSet;
