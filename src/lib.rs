@@ -9,15 +9,23 @@ pub mod proto {
 
 /// A a certificate that whitelist a public key, to be valid it must contains the whitelisted public key signed by the certifier authority
 /// and the resulting signature signed by the certified authority
-pub struct AuthorityCertificate<CertifierSet, CertifiedSet, CertifierSignatureSet> {
-    pub certifier_pubkey: Option<VerifyingKey>,
-    pub certified_pubkey: Option<VerifyingKey>,
-    pub certifier_signature: Option<Signature>,
-    pub certified_signature: Option<Signature>,
-    pub _certifier_set: PhantomData<CertifierSet>,
-    pub _certified_set: PhantomData<CertifiedSet>,
-    pub _certifier_signature_set: PhantomData<CertifierSignatureSet>,
-    pub is_signed_by_certified: bool,
+pub struct AuthorityCertificateBuilder<CertifierSet, CertifiedSet, CertifierSignatureSet> {
+    certifier_pubkey: Option<VerifyingKey>,
+    certified_pubkey: Option<VerifyingKey>,
+    certifier_signature: Option<Signature>,
+    certified_signature: Option<Signature>,
+    _certifier_set: PhantomData<CertifierSet>,
+    _certified_set: PhantomData<CertifiedSet>,
+    _certifier_signature_set: PhantomData<CertifierSignatureSet>,
+    is_signed_by_certified: bool,
+}
+
+pub struct AuthorityCertificate {
+    certifier_pubkey: VerifyingKey,
+    certified_pubkey: VerifyingKey,
+    certifier_signature: Signature,
+    certified_signature: Option<Signature>,
+    is_signed_by_certified: bool,
 }
 
 struct CertifierSet;
@@ -25,9 +33,9 @@ struct CertifiedSet;
 struct CertifierSignatureSet;
 struct NotSet;
 
-impl Default for AuthorityCertificate<NotSet, NotSet, NotSet> {
+impl Default for AuthorityCertificateBuilder<NotSet, NotSet, NotSet> {
     fn default() -> Self {
-        AuthorityCertificate {
+        AuthorityCertificateBuilder {
             certifier_pubkey: None,
             certified_pubkey: None,
             certifier_signature: None,
@@ -40,12 +48,12 @@ impl Default for AuthorityCertificate<NotSet, NotSet, NotSet> {
     }
 }
 
-impl AuthorityCertificate<NotSet, NotSet, NotSet> {
+impl AuthorityCertificateBuilder<NotSet, NotSet, NotSet> {
     pub fn for_authority(
         self,
         certified_pubkey: VerifyingKey,
-    ) -> AuthorityCertificate<CertifiedSet, NotSet, NotSet> {
-        AuthorityCertificate {
+    ) -> AuthorityCertificateBuilder<CertifiedSet, NotSet, NotSet> {
+        AuthorityCertificateBuilder {
             certified_pubkey: Some(certified_pubkey),
             _certifier_set: PhantomData,
             _certified_set: PhantomData,
@@ -58,17 +66,17 @@ impl AuthorityCertificate<NotSet, NotSet, NotSet> {
     }
 }
 
-impl AuthorityCertificate<CertifiedSet, NotSet, NotSet> {
+impl AuthorityCertificateBuilder<CertifiedSet, NotSet, NotSet> {
     pub fn from_certifier(
         self,
         certifier_signing_key: SigningKey,
-    ) -> AuthorityCertificate<CertifiedSet, CertifierSet, CertifierSignatureSet> {
+    ) -> AuthorityCertificateBuilder<CertifiedSet, CertifierSet, CertifierSignatureSet> {
         let certifier_signature = self.certified_pubkey.as_ref().map(|certified_pubkey| {
             certifier_signing_key
                 .clone()
                 .sign(certified_pubkey.as_bytes())
         });
-        AuthorityCertificate {
+        AuthorityCertificateBuilder {
             certifier_pubkey: Some(certifier_signing_key.verifying_key()),
             certifier_signature,
             _certifier_set: PhantomData,
@@ -81,12 +89,12 @@ impl AuthorityCertificate<CertifiedSet, NotSet, NotSet> {
     }
 }
 
-impl AuthorityCertificate<CertifiedSet, CertifierSet, CertifierSignatureSet> {
+impl AuthorityCertificate {
     pub fn serialize_protobuf(&self) -> Vec<u8> {
         let cert = proto::AuthorityCertificate {
-            certifier_pubkey: self.certifier_pubkey.unwrap().to_bytes().to_vec(),
-            certified_pubkey: self.certified_pubkey.unwrap().to_bytes().to_vec(),
-            certifier_signature: self.certifier_signature.unwrap().to_bytes().to_vec(),
+            certifier_pubkey: self.certifier_pubkey.to_bytes().to_vec(),
+            certified_pubkey: self.certified_pubkey.to_bytes().to_vec(),
+            certifier_signature: self.certifier_signature.to_bytes().to_vec(),
             certified_signature: self.certified_signature.unwrap().to_bytes().to_vec(),
             is_signed_by_certified: self.is_signed_by_certified,
         };
@@ -94,35 +102,32 @@ impl AuthorityCertificate<CertifiedSet, CertifierSet, CertifierSignatureSet> {
     }
 }
 
-impl AuthorityCertificate<CertifiedSet, CertifierSet, CertifierSignatureSet> {
+impl AuthorityCertificate {
     pub fn try_deserialize_protobuf(
         bytes: &[u8],
-    ) -> anyhow::Result<AuthorityCertificate<CertifiedSet, CertifierSet, CertifierSignatureSet>>
+    ) -> anyhow::Result<AuthorityCertificate>
     {
         let cert = proto::AuthorityCertificate::decode(bytes)?;
         Ok(AuthorityCertificate {
-            certifier_pubkey: Some(VerifyingKey::try_from(cert.certifier_pubkey.as_slice())?),
-            certified_pubkey: Some(VerifyingKey::try_from(cert.certified_pubkey.as_slice())?),
-            certifier_signature: Some(Signature::try_from(cert.certifier_signature.as_slice())?),
+            certifier_pubkey: VerifyingKey::try_from(cert.certifier_pubkey.as_slice())?,
+            certified_pubkey: VerifyingKey::try_from(cert.certified_pubkey.as_slice())?,
+            certifier_signature: Signature::try_from(cert.certifier_signature.as_slice())?,
             certified_signature: Some(Signature::try_from(cert.certified_signature.as_slice())?),
             is_signed_by_certified: cert.is_signed_by_certified,
-            _certifier_set: PhantomData,
-            _certified_set: PhantomData,
-            _certifier_signature_set: PhantomData,
         })
     }
 }
 
-impl TryFrom<&[u8]> for AuthorityCertificate<CertifiedSet, CertifierSet, CertifierSignatureSet> {
+impl TryFrom<&[u8]> for AuthorityCertificate {
     type Error = anyhow::Error;
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         AuthorityCertificate::try_deserialize_protobuf(bytes)
     }
 }
 
-impl AuthorityCertificate<CertifiedSet, CertifierSet, CertifierSignatureSet> {
+impl AuthorityCertificate {
     pub fn sign_certified(self, certified_signing_key: SigningKey) -> Self {
-        let signature = certified_signing_key.clone().sign(&self.certifier_signature.unwrap().to_vec());
+        let signature = certified_signing_key.clone().sign(&self.certifier_signature.to_vec());
         AuthorityCertificate {
             certified_signature: Some(signature),
             is_signed_by_certified: true,
@@ -131,7 +136,7 @@ impl AuthorityCertificate<CertifiedSet, CertifierSet, CertifierSignatureSet> {
     }
 }
 
-pub enum AuthorityCertificateError {
+pub enum AuthorityCertificateBuilderError {
     NotSignedByCertified,
     InvalidCertifiedSignature,
     InvalidCertifierSignature,
@@ -139,25 +144,25 @@ pub enum AuthorityCertificateError {
     InvalidCertifiedPubkey,
 }
 
-impl AuthorityCertificate<CertifiedSet, CertifierSet, CertifierSignatureSet> {
-    pub fn verify(&self, certified_pubkey: VerifyingKey, certifier_pubkey: VerifyingKey) -> Result<(), Vec<AuthorityCertificateError>> {
+impl AuthorityCertificate {
+    pub fn verify(&self, certified_pubkey: VerifyingKey, certifier_pubkey: VerifyingKey) -> Result<(), Vec<AuthorityCertificateBuilderError>> {
         let mut errors = Vec::new();
 
-        if let Err(_) = self.certifier_pubkey.unwrap().verify(self.certified_pubkey.unwrap().as_bytes(), &self.certifier_signature.unwrap()) {
-            errors.push(AuthorityCertificateError::InvalidCertifierSignature);
+        if let Err(_) = self.certifier_pubkey.verify(self.certified_pubkey.as_bytes(), &self.certifier_signature) {
+            errors.push(AuthorityCertificateBuilderError::InvalidCertifierSignature);
         }
         if self.is_signed_by_certified {
-            if let Err(_) = certified_pubkey.verify(self.certifier_signature.unwrap().to_vec().as_slice(), &self.certified_signature.unwrap()) {
-                errors.push(AuthorityCertificateError::InvalidCertifiedSignature);
+            if let Err(_) = certified_pubkey.verify(self.certifier_signature.to_vec().as_slice(), &self.certified_signature.unwrap()) {
+                errors.push(AuthorityCertificateBuilderError::InvalidCertifiedSignature);
             }
         } else {
-            errors.push(AuthorityCertificateError::NotSignedByCertified);
+            errors.push(AuthorityCertificateBuilderError::NotSignedByCertified);
         }
-        if self.certifier_pubkey.unwrap() != certifier_pubkey {
-            errors.push(AuthorityCertificateError::InvalidCertifierPubkey);
+        if self.certifier_pubkey != certifier_pubkey {
+            errors.push(AuthorityCertificateBuilderError::InvalidCertifierPubkey);
         }
-        if self.certified_pubkey.unwrap() != certified_pubkey {
-            errors.push(AuthorityCertificateError::InvalidCertifiedPubkey);
+        if self.certified_pubkey != certified_pubkey {
+            errors.push(AuthorityCertificateBuilderError::InvalidCertifiedPubkey);
         }
         if errors.is_empty() {
             Ok(())
