@@ -7,8 +7,8 @@ edition = "2021"
 anyhow = "^1.0.71"
 ed25519-dalek = { version = "2.1.1", features = ["signature"]}
 prost = "^0.13"
-prost-build = "0.13.4"
+prost-build = "^0.13"
 
 [build-dependencies]
 prost = "^0.13"
-prost-build = "0.13.4"
+prost-build = "^0.13"
