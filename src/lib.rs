@@ -89,6 +89,18 @@ impl AuthorityCertificateBuilder<CertifiedSet, NotSet, NotSet> {
     }
 }
 
+impl AuthorityCertificateBuilder<CertifiedSet, CertifierSet, CertifierSignatureSet> {
+    pub fn build(self) -> AuthorityCertificate {
+        AuthorityCertificate {
+            certifier_pubkey: self.certifier_pubkey.unwrap(),
+            certified_pubkey: self.certified_pubkey.unwrap(),
+            certifier_signature: self.certifier_signature.unwrap(),
+            certified_signature: self.certified_signature,
+            is_signed_by_certified: self.is_signed_by_certified,
+        }
+    }
+}
+
 impl AuthorityCertificate {
     pub fn serialize_protobuf(&self) -> Vec<u8> {
         let cert = proto::AuthorityCertificate {
