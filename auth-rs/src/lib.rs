@@ -114,7 +114,10 @@ impl AuthorityCertificate {
             certified_signature: cert_sign,
             is_signed_by_certified: self.is_signed_by_certified,
         };
-        cert.encode_to_vec()
+        let encoded = cert.encode_to_vec();
+        let decoded = proto::AuthorityCertificate::decode(encoded.as_slice()).expect("fefefefef");
+        assert_eq!(cert, decoded);
+        encoded
     }
 }
 
