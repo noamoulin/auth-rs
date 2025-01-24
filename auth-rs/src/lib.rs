@@ -1,7 +1,7 @@
 use ed25519_dalek::{ed25519::signature::SignerMut, Signature, SigningKey, VerifyingKey};
 use prost::Message;
 use ed25519_dalek::Verifier;
-use std::{default, marker::PhantomData};
+use std::marker::PhantomData;
 
 pub mod proto {
     include!(concat!(env!("OUT_DIR"), "/authority_certificate.rs"));
