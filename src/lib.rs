@@ -28,10 +28,10 @@ pub struct AuthorityCertificate {
     is_signed_by_certified: bool,
 }
 
-struct CertifierSet;
-struct CertifiedSet;
-struct CertifierSignatureSet;
-struct NotSet;
+pub struct CertifierSet;
+pub struct CertifiedSet;
+pub struct CertifierSignatureSet;
+pub struct NotSet;
 
 impl Default for AuthorityCertificateBuilder<NotSet, NotSet, NotSet> {
     fn default() -> Self {
