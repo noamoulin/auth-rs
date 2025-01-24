@@ -117,6 +117,7 @@ impl AuthorityCertificate {
         let encoded = cert.encode_to_vec();
         let decoded = proto::AuthorityCertificate::decode(encoded.as_slice()).expect("fefefefef");
         assert_eq!(cert, decoded);
+        println!("{:?}", decoded);
         encoded
     }
 }
