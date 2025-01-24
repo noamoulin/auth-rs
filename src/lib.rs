@@ -1,7 +1,7 @@
-use ed25519_dalek::{ed25519::signature::SignerMut, SecretKey, Signature, SigningKey, VerifyingKey};
+use ed25519_dalek::{ed25519::signature::SignerMut, Signature, SigningKey, VerifyingKey};
 use prost::Message;
 use ed25519_dalek::Verifier;
-use std::marker::PhantomData;
+use std::{default, marker::PhantomData};
 
 pub mod proto {
     include!(concat!(env!("OUT_DIR"), "/authority_certificate.rs"));
@@ -103,11 +103,15 @@ impl AuthorityCertificateBuilder<CertifiedSet, CertifierSet, CertifierSignatureS
 
 impl AuthorityCertificate {
     pub fn serialize_protobuf(&self) -> Vec<u8> {
+        let cert_sign = match &self.certified_signature {
+            Some(certified_signature) => certified_signature.to_bytes().to_vec(),
+            None => vec![],
+        };
         let cert = proto::AuthorityCertificate {
             certifier_pubkey: self.certifier_pubkey.to_bytes().to_vec(),
             certified_pubkey: self.certified_pubkey.to_bytes().to_vec(),
             certifier_signature: self.certifier_signature.to_bytes().to_vec(),
-            certified_signature: self.certified_signature.unwrap().to_bytes().to_vec(),
+            certified_signature: cert_sign,
             is_signed_by_certified: self.is_signed_by_certified,
         };
         cert.encode_to_vec()
