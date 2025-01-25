@@ -58,9 +58,10 @@ fn main() -> anyhow::Result<()> {
         } => {
             let cert_bytes = decode(certificate)?;
             let certificate = AuthorityCertificate::try_from(cert_bytes.as_slice())?;
-            certificate.verify(certified_public_key, certifier_public_key)?;
-
-            println!("Certificate succesfully verified");
+            match certificate.verify(certified_public_key, certifier_public_key) {
+                Ok(_) => println!("certificate is valid"),
+                Err(e) => println!("certificate is invalid: {}", e),
+            }
         }
     }
 
