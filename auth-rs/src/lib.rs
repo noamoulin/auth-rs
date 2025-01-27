@@ -124,11 +124,12 @@ impl AuthorityCertificate {
     ) -> anyhow::Result<AuthorityCertificate>
     {
         let cert = proto::AuthorityCertificate::decode(bytes)?;
+        
         Ok(AuthorityCertificate {
             certifier_pubkey: VerifyingKey::try_from(cert.certifier_pubkey.as_slice())?,
             certified_pubkey: VerifyingKey::try_from(cert.certified_pubkey.as_slice())?,
             certifier_signature: Signature::try_from(cert.certifier_signature.as_slice())?,
-            certified_signature: Some(Signature::try_from(cert.certified_signature.as_slice())?),
+            certified_signature: if cert.is_signed_by_certified { Some(Signature::try_from(cert.certified_signature.as_slice())?) } else { None },
             is_signed_by_certified: cert.is_signed_by_certified,
         })
     }
