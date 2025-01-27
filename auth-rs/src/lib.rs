@@ -204,4 +204,18 @@ impl AuthorityCertificate {
             Err(anyhow::Error::new(AuthorityCertificateVerificationErrors(errors)))
         }
     }
+    /// certifier and certified pubkey in hex, with signatures
+    pub fn debug_infos(&self) -> String {
+        format!(
+            "Certifier pubkey: {}\nCertified pubkey: {}\nCertifier signature: {}\nCertified signature: {}\nIs signed by certified: {}",
+            hex::encode(self.certifier_pubkey.to_bytes()),
+            hex::encode(self.certified_pubkey.to_bytes()),
+            hex::encode(self.certifier_signature.to_bytes()),
+            match &self.certified_signature {
+                Some(certified_signature) => hex::encode(certified_signature.to_bytes()),
+                None => "None".to_string(),
+            },
+            self.is_signed_by_certified
+        )
+    } 
 }
